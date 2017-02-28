@@ -48,13 +48,16 @@ The model.py file contains the code for training and saving the convolution neur
 
 My model consists of a convolution neural network based on the nvidia architecture. The model is described in detail further down.
 
-The model includes RELU layers to introduce nonlinearity, and the data is normalized in the model using a Keras lambda layer. 
+The model includes RELU layers to introduce nonlinearity. There are studies that indicate that ELU activation improves the learning and is at least as good as RELU. I tried ELU but for my data and model it didn't show any improvement. Using tanh or sigmoid activation was not considered.
+The data is normalized in the model using a Keras lambda layer. 
 
 ####2. Attempts to reduce overfitting in the model
 
-The model was trained and validated on different data sets to ensure that the model was not overfitting and the number of training epochs was tuned by observing the linear improvment of training loss and validation loss. 
+The model was trained and validated on different data sets to ensure that the model was not overfitting and the number of training epochs was tuned by observing the linear improvement of training loss and validation loss. 
 
-The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track. In addition I tested and made sure that the vehicle succeded to finish the track in opposite direction.
+The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track. In addition I tested and made sure that the vehicle succeeded to finish the track in opposite direction.
+
+I tried to add a dropout layer the see if that could prevent overfitting but it didn't improve performance, at least not on my small data set.
 
 ####3. Model parameter tuning
 
@@ -80,7 +83,7 @@ My second step was to use a convolution neural network model similar to LeNet. I
 My third attempt was the nvidia architecture. This time the network could control the car for a full lap. And in addition to that it succeeded to navigate the track in the opposite direction. That's equal to a similar but unseen track and proves that the network is able to generalize.
 
 
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road.
+At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road. This was a very time consuming project with many degrees of freedom. What proved successfull to me was using a small data set for fast iterations on my non-GPU setup and knowing when to stop training (number of epochs). 
 
 ####2. Final Model Architecture
 
