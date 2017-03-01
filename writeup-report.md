@@ -48,7 +48,10 @@ The model.py file contains the code for training and saving the convolution neur
 
 My model consists of a convolution neural network based on the nvidia architecture. The model is described in detail further down.
 
-The model includes RELU layers to introduce nonlinearity. There are studies that indicate that ELU activation improves the learning and is at least as good as RELU. I tried ELU but for my data and model it didn't show any improvement. Using tanh or sigmoid activation was not considered.
+The model includes ELU layers to introduce nonlinearity. There are studies that indicate that ELU activation improves the learning and is at least as good as RELU. When I first tried ELU it performed worse than RELU but when I added more data it performed better and I kept it in the solution.
+
+Using tanh or sigmoid activation was not considered.
+
 The data is normalized in the model using a Keras lambda layer. 
 
 ####2. Attempts to reduce overfitting in the model
@@ -57,7 +60,7 @@ The model was trained and validated on different data sets to ensure that the mo
 
 The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track. In addition I tested and made sure that the vehicle succeeded to finish the track in opposite direction.
 
-I tried to add a dropout layer the see if that could prevent overfitting but it didn't improve performance, at least not on my small data set.
+I tried to add a dropout layer the see if that could prevent overfitting but it didn't improve performance, at least not on my small data set. When I added another lap of data and the dropout worked better. Another lap of data also impreoved the stability and made the model less dependent on the number of training epochs.
 
 ####3. Model parameter tuning
 
@@ -65,7 +68,7 @@ The model used an adam optimizer, so the learning rate was not tuned manually.
 
 ####4. Appropriate training data
 
-Training data was chosen to keep the vehicle driving on the road. I tried several approaches but finally I succeeded with a single(!) lap of center lane driving. In the end I made it without any recovery data. My suspicion is that the left/right images were enough to find a stable solution. I doubled the training data by flipping images horizontally and inverting angles. In addition to adding more test data, the flipping solved the bias to turn left.
+Training data was chosen to keep the vehicle driving on the road. I tried several approaches but finally I succeeded with a single(!) lap of center lane driving. Later on I added another lap of training data to make the solution more stable. I made it without any recovery data. My suspicion is that the left/right images were enough to find a stable solution. I doubled the training data by flipping images horizontally and inverting angles. In addition to adding more test data, the flipping solved the bias to turn left.
 
 For details about how I created the training data, see the next section. 
 
@@ -82,12 +85,13 @@ My second step was to use a convolution neural network model similar to LeNet. I
 
 My third attempt was the nvidia architecture. This time the network could control the car for a full lap. And in addition to that it succeeded to navigate the track in the opposite direction. That's equal to a similar but unseen track and proves that the network is able to generalize.
 
-
-At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road. This was a very time consuming project with many degrees of freedom. What proved successfull to me was using a small data set for fast iterations on my non-GPU setup and knowing when to stop training (number of epochs). 
+At the end of the process, the vehicle is able to drive autonomously around the track without leaving the road. This was a very time consuming project with many degrees of freedom. What proved successfull to me was using a small data set for fast iterations on my non-GPU setup and knowing when to stop training (number of epochs). When I found a solution that worked reasonably well I added more test data.
 
 ####2. Final Model Architecture
 
-The final model architecture was based on the nvidia architecture and consisted of a convolution neural network with the five convolutional layers connected to four fully connected layers. In the front of the network are two layers containing cropping and normalization/mean centering.
+The final model architecture was based on the nvidia architecture and consisted of a convolution neural network with the five convolutional layers connected to four fully connected layers and a output layer. In the front of the network are two layers containing cropping and normalization/mean centering. Keeping all preprocessing in the Keras pipeline simplifies prediction as the same model is used.
+
+I settled for a stride of (2, 2) (subsample in Keras). Compared to a (1, 1) stride it reduces the number of weights in the model and it's still reasonable to assume that no features in the input data, relevant to driving performance, are lost. A (3, 3) stride would probably work fine as well. Something that could be invetigated further.
 
 ```python
 def create_model():
@@ -97,13 +101,15 @@ def create_model():
     model.add(Cropping2D(cropping=((70, 25), (0, 0))))
 
     #nvidia Arch
-    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), activation='relu'))
-    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation='relu'))
-    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation='relu'))
-    model.add(Convolution2D(64, 3, 3, activation='relu'))
-    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), activation='elu'))
+    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), activation='elu'))
+    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), activation='elu'))
+    model.add(Convolution2D(64, 3, 3, activation='elu'))
+    model.add(Convolution2D(64, 3, 3, activation='elu'))
 
     model.add(Flatten())
+    model.add(Dense(1164))
+    model.add(Dropout())
     model.add(Dense(100))
     model.add(Dense(50))
     model.add(Dense(10))
@@ -123,8 +129,9 @@ I tried several different approaches regarding data collection.
 3. Capturing data using mouse.
 4. Capture several laps with center lane driving and recovery.
 5. Capturing a single center lane lap using a mouse. 
+6. Adding more data to stabilize.
 
-In the end I used a single center line lap with data augmenting. The augmenting techniques I used ere Left/Right images with correction and image flipping.
+In the end I used two center line laps with data augmenting. The augmenting techniques I used ere Left/Right images with correction and image flipping.
 
 ![alt text][image2]
 
@@ -182,11 +189,11 @@ def load_data(data_path):
 
 
 
-After the collection process, I had 1319 number of data points. 
-Adding the left/right images got it to 3957.
-Flipping the images got it to 7914 images.
+After the collection process, I had 2635 number of data points. 
+Adding the left/right images got it to 7905.
+Flipping the images got it to 15810 images.
 
 
 I finally randomly shuffled the data set and put 20% of the data into a validation set. I tried to use a generator during training but it proved to be inefficient, on my non-GPU setup, to repeatedly load and parse images from disk. I discarded that solution.  
 
-I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was 3 by observing the linear behavior of loss and validation loss. I used an adam optimizer so that manually training the learning rate wasn't necessary.
+I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was 5 by observing the linear behavior of loss and validation loss. I used an adam optimizer so that manually optimizing the learning rate wasn't necessary.
